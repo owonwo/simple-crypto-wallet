@@ -1,44 +1,54 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-// import { sendFunds } from './libs/account.ts';
-import { Test } from './Web3Demo.tsx';
+import { Test } from "./Web3Demo.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { LogInIcon, Wallet } from "lucide-react";
+import { SessionProvider, useWallet } from "./contexts/session-provider.tsx";
+
+import { UserInfo } from "./components/UserInfo.tsx";
 
 function App() {
-  const [count, setCount] = useState(0);
-
-  // React.useEffect(() => {
-  // createWallet()
-  // recoverWallet("hair kite speed dilemma prepare price silent tone muscle option apology manual")
-  // sendFunds()
-  // }, [])
-
   return (
-    <>
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <SessionProvider>
+      <div
+        className={"bg-gray-800 text-white min-h-screen"}
+        style={{ colorScheme: "dark" }}
+      >
+        <header
+          className={"flex justify-between items-center container mx-auto py-5"}
+        >
+          <span className={"tracking-[4px] font-bold italic text-2xl"}>
+            SHAPP
+          </span>
+
+          <AuthSection />
+        </header>
+
+        <Test />
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.tsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-                <Test />
-    </>
-  )
+    </SessionProvider>
+  );
 }
 
-export default App
+function AuthSection() {
+  const { isConnected, login } = useWallet();
+
+  return (
+    <nav className={"flex space-x-4"}>
+      {!isConnected ? (
+        <>
+          <Button variant="ghost" className={"flex space-x-2"}>
+            <Wallet />
+            <span>Create account</span>
+          </Button>
+          <Button className={"flex space-x-2"} onClick={login}>
+            <LogInIcon />
+            <span>Login</span>
+          </Button>{" "}
+        </>
+      ) : (
+        <UserInfo />
+      )}
+    </nav>
+  );
+}
+
+export default App;

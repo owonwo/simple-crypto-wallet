@@ -1,5 +1,5 @@
 import Web3 from "web3";
-import {ethers} from "ethers";
+import { ethers } from "ethers";
 
 export default class RPC {
   constructor(provider: any) {
@@ -19,7 +19,7 @@ export default class RPC {
     }
   }
 
-  async getAccounts() {
+  async getAccounts(): Promise<string> {
     try {
       const web3 = new Web3(this.provider);
 
@@ -28,7 +28,7 @@ export default class RPC {
 
       return address;
     } catch (error) {
-      return error;
+      throw error;
     }
   }
 
@@ -41,7 +41,7 @@ export default class RPC {
 
       // Get user's balance in ether
       const balance = ethers.utils.formatEther(
-        await web3.eth.getBalance(address) // Balance is in wei
+        await web3.eth.getBalance(address), // Balance is in wei
       );
 
       return balance;
@@ -61,7 +61,7 @@ export default class RPC {
 
       const amount = ethers.utils.parseEther("0.01"); // Convert 1 ether to wei
 
-      console.log({ amount })
+      console.log({ amount });
 
       // Submit transaction to the blockchain and wait for it to be mined
       const receipt = await web3.eth.sendTransaction({
@@ -458,7 +458,7 @@ export default class RPC {
 
       var tokenContract = new web3.eth.Contract(
         tokenConstant.abi,
-        "0x07920F6d18464E56Da438D1ffF38f125C8AB90dD"
+        "0x07920F6d18464E56Da438D1ffF38f125C8AB90dD",
       );
 
       // Get user's Ethereum public address
@@ -468,7 +468,7 @@ export default class RPC {
       const response = await tokenContract.methods
         .approve(
           "0xd1d25EAc33401b97568869564ee4ba6e259DCB35",
-          "100000000000000000000000000"
+          "100000000000000000000000000",
         )
         .send(
           {
@@ -482,7 +482,7 @@ export default class RPC {
             } else {
               console.log(error);
             }
-          }
+          },
         )
         .on("receipt", async function (receipt) {
           console.log(receipt);
