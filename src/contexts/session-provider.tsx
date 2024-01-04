@@ -1,7 +1,10 @@
 import React, { useState } from "react";
+import useEffectEvent from "react-use-event-hook";
 import { Web3Auth } from "@web3auth/modal";
 import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base";
 import RPC from "../web3RPC.ts";
+import { toast } from "sonner";
+import debounce from "lodash/debounce";
 
 type UserInfo = Awaited<ReturnType<Web3Auth["getUserInfo"]>>;
 
@@ -51,34 +54,31 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
 
   const [isConnected, setConnected] = React.useState(false);
 
-  React.useEffect(() => {
-    const init = async () => {
-      try {
-        const web3auth = new Web3Auth({
-          clientId: import.meta.env.VITE_WEB3AUTH_CLIENT,
-          chainConfig: {
-            chainNamespace: CHAIN_NAMESPACES.EIP155,
-            chainId: "0x14A33",
-            rpcTarget: "https://goerli.base.org",
-          },
-        });
-        setWeb3auth(web3auth);
-        await web3auth.initModal();
-        const connectedStatus = web3auth.status === "connected";
-        if (connectedStatus) {
-          setProvider(web3auth.provider);
-          setConnected(true);
-        } else {
-          // wait for user to click on the Connect button
-        }
-      } catch (error) {
-        console.error(error);
+  const init = useEffectEvent(async () => {
+    try {
+      const web3auth = new Web3Auth({
+        clientId: import.meta.env.VITE_WEB3AUTH_CLIENT,
+        chainConfig: {
+          chainNamespace: CHAIN_NAMESPACES.EIP155,
+          chainId: "0x14A33",
+          rpcTarget: "https://goerli.base.org",
+        },
+      });
+      setWeb3auth(web3auth);
+      await web3auth.initModal();
+      const connectedStatus = web3auth.status === "connected";
+      if (connectedStatus) {
+        setProvider(web3auth.provider);
+        setConnected(true);
+      } else {
+        // wait for user to click on the Connect button
       }
-    };
-    init();
-  }, []);
+    } catch (error) {
+      console.error(error);
+    }
+  });
 
-  const handleLogin = async () => {
+  const handleLogin = useEffectEvent(async () => {
     if (!web3auth) {
       console.log("web3auth not initialized yet");
       return;
@@ -92,9 +92,9 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
 
     setProvider(web3auth.provider);
     setConnected(true);
-  };
+  });
 
-  const handleLogout = async () => {
+  const handleLogout = useEffectEvent(async () => {
     if (!web3auth) {
       console.log("web3auth not initialized yet");
       return;
@@ -107,9 +107,9 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
     setAddress("");
     setUserData({});
     setChainId("");
-  };
+  });
 
-  const getUserInfo = async () => {
+  const getUserInfo = useEffectEvent(async () => {
     if (!web3auth) {
       console.log("web3auth not initialized yet");
       return;
@@ -117,25 +117,25 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
     const user = await web3auth.getUserInfo();
     setUserData(user);
     return user as UserInfo;
-  };
+  });
 
   const rpc = React.useMemo(() => new RPC(provider), [provider]);
 
-  const getChainId = async () => {
+  const getChainId = useEffectEvent(async () => {
     if (!provider) {
       console.log("provider not initialized yet");
       return;
     }
     const chainId: string = await rpc.getChainId();
     setChainId(chainId);
-  };
+  });
 
-  const getAccounts = async () => {
+  const getAccounts = useEffectEvent(async () => {
     const address = await rpc.getAccounts();
     setAddress(address);
-  };
+  });
 
-  const getBalance = async () => {
+  const getBalance = useEffectEvent(async () => {
     if (!provider) {
       console.log("provider not initialized yet");
       return;
@@ -144,7 +144,7 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
     setBalance(balance as number);
 
     return balance;
-  };
+  });
 
   const sendTransaction = async () => {
     if (!provider) {
@@ -155,20 +155,37 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
     console.log(receipt);
   };
 
-  React.useEffect(() => {
-    if (!provider) return;
-    if (!isConnected) return;
+  const setupAccount = React.useMemo(
+    () =>
+      debounce(async function setupAccount() {
+        await Promise.all([
+          getUserInfo(),
+          getAccounts(),
+          getBalance(),
+          getChainId(),
+        ])
+          .then(() => {
+            toast.info("Log in successful");
+          })
+          .catch(() => {
+            toast.error(
+              "Oops! we experienced while fetching your information. Please try again later",
+              { dismissible: true, duration: 5000 },
+            );
+          });
+      }, 1000),
+    [],
+  );
 
-    (async () => {
-      debugger;
-      await Promise.all([
-        getUserInfo(),
-        getAccounts(),
-        getBalance(),
-        getChainId(),
-      ]).then(console.info);
-    })();
-  }, [provider, isConnected]);
+  React.useEffect(() => {
+    init();
+  }, [init]);
+
+  React.useEffect(() => {
+    if (isConnected && provider) {
+      setupAccount();
+    }
+  }, [isConnected, provider]);
 
   return (
     <Ctx.Provider

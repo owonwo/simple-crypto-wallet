@@ -1,3 +1,4 @@
+import { Toaster } from "@/components/ui/sonner";
 import { Test } from "./Web3Demo.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { LogInIcon, Wallet } from "lucide-react";
@@ -24,6 +25,7 @@ function App() {
 
         <Test />
       </div>
+      <Toaster />
     </SessionProvider>
   );
 }
