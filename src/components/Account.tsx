@@ -1,4 +1,4 @@
-import { useWallet } from "../contexts/session-provider.tsx";
+import { useWallet } from "../contexts/wallet-provider.tsx";
 
 export let styles = {
   button: {

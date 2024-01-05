@@ -1,4 +1,4 @@
-import { useWallet } from "../contexts/session-provider.tsx";
+import { useWallet } from "../contexts/wallet-provider.tsx";
 import { shortenAddress } from "../libs/utils.ts";
 import { Button } from "@/components/ui/button.tsx";
 import { LogOutIcon } from "lucide-react";

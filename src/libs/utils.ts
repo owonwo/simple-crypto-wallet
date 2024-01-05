@@ -11,3 +11,8 @@ export const shortenAddress = (address: string, start = 4, end = 5) => {
     return "--";
   }
 };
+
+export function safeNum(a: number | string | undefined, fallback: number = 0) {
+  if (!a) return fallback;
+  return !Object.is(NaN, +a) ? parseFloat(a) : fallback;
+}

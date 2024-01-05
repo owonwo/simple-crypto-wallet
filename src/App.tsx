@@ -1,20 +1,21 @@
 import { Toaster } from "@/components/ui/sonner";
-import { Test } from "./Web3Demo.tsx";
 import { Button } from "@/components/ui/button.tsx";
 import { LogInIcon, Wallet } from "lucide-react";
-import { SessionProvider, useWallet } from "./contexts/session-provider.tsx";
+import { WalletProvider, useWallet } from "./contexts/wallet-provider.tsx";
 
 import { UserInfo } from "./components/UserInfo.tsx";
+import { SendToken } from "./components/SendToken.tsx";
+import { TransactionHistory } from "./components/Transaction.tsx";
 
 function App() {
   return (
-    <SessionProvider>
+    <WalletProvider>
       <div
         className={"bg-gray-800 text-white min-h-screen"}
         style={{ colorScheme: "dark" }}
       >
         <header
-          className={"flex justify-between items-center container mx-auto py-5"}
+          className={"flex justify-between items-center container mx-auto py-2"}
         >
           <span className={"tracking-[4px] font-bold italic text-2xl"}>
             SHAPP
@@ -23,10 +24,13 @@ function App() {
           <AuthSection />
         </header>
 
-        <Test />
+        <main>
+          <SendToken />
+          <TransactionHistory />
+        </main>
       </div>
       <Toaster />
-    </SessionProvider>
+    </WalletProvider>
   );
 }
 

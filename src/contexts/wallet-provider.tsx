@@ -8,11 +8,11 @@ import debounce from "lodash/debounce";
 
 type UserInfo = Awaited<ReturnType<Web3Auth["getUserInfo"]>>;
 
-const Ctx = React.createContext<{
+type WalletCtx = {
   isConnected: boolean;
   provider: IProvider | null;
   data: {
-    balance: number;
+    balance: string;
     address: string | null;
     chainId: string | null;
     userData: UserInfo | null;
@@ -22,12 +22,15 @@ const Ctx = React.createContext<{
   setAddress: React.Dispatch<React.SetStateAction<string>>;
   setChainId: React.Dispatch<React.SetStateAction<string>>;
   getUserInfo: () => Promise<UserInfo | null>;
-}>({
+  sendTransaction: RPC["sendTransaction"];
+};
+
+const Ctx = React.createContext<WalletCtx>({
   isConnected: false,
   provider: null,
   data: {
     address: null,
-    balance: 0,
+    balance: "0",
     chainId: null,
     userData: null,
   },
@@ -36,17 +39,14 @@ const Ctx = React.createContext<{
   setAddress: () => {},
   setChainId: () => {},
   getUserInfo: () => Promise.reject("Unable to retrieve user information"),
+  sendTransaction: () => Promise.reject("Unable to make transaction"),
 });
 
-export function useWallet() {
-  return React.useContext(Ctx);
-}
-
-export function SessionProvider(props: { children?: React.ReactNode }) {
+export function WalletProvider(props: { children?: React.ReactNode }) {
   const [web3auth, setWeb3auth] = useState<Web3Auth | null>(null);
   const [provider, setProvider] = useState<IProvider | null>(null);
   const [address, setAddress] = useState("");
-  const [balance, setBalance] = useState(0);
+  const [balance, setBalance] = useState("0");
   const [chainId, setChainId] = useState("");
   const [userData, setUserData] = useState<UserInfo | Record<string, never>>(
     {},
@@ -103,7 +103,7 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
     await web3auth.logout();
     setConnected(false);
     setProvider(null);
-    setBalance(0);
+    setBalance("0");
     setAddress("");
     setUserData({});
     setChainId("");
@@ -111,15 +111,15 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
 
   const getUserInfo = useEffectEvent(async () => {
     if (!web3auth) {
-      console.log("web3auth not initialized yet");
-      return;
+      throw new Error("web3auth not initialized yet");
     }
+
     const user = await web3auth.getUserInfo();
     setUserData(user);
     return user as UserInfo;
   });
 
-  const rpc = React.useMemo(() => new RPC(provider), [provider]);
+  const rpc = React.useMemo(() => new RPC(provider ?? undefined), [provider]);
 
   const getChainId = useEffectEvent(async () => {
     if (!provider) {
@@ -141,18 +141,19 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
       return;
     }
     const balance = await rpc.getBalance();
-    setBalance(balance as number);
+    setBalance(balance);
 
     return balance;
   });
 
-  const sendTransaction = async () => {
+  const sendTransaction = async (
+    ...params: Parameters<(typeof rpc)["sendTransaction"]>
+  ) => {
     if (!provider) {
-      console.log("provider not initialized yet");
-      return;
+      throw Error("provider not initialized yet");
     }
-    const receipt = await rpc.sendTransaction();
-    console.log(receipt);
+
+    return await rpc.sendTransaction(...params);
   };
 
   const setupAccount = React.useMemo(
@@ -165,16 +166,16 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
           getChainId(),
         ])
           .then(() => {
-            toast.info("Log in successful");
+            toast.info("Logged in");
           })
           .catch(() => {
             toast.error(
-              "Oops! we experienced while fetching your information. Please try again later",
+              "Oops! we experienced while fetching information. Please try again later",
               { dismissible: true, duration: 5000 },
             );
           });
       }, 1000),
-    [],
+    [getAccounts, getBalance, getChainId, getUserInfo],
   );
 
   React.useEffect(() => {
@@ -204,12 +205,13 @@ export function SessionProvider(props: { children?: React.ReactNode }) {
         login: handleLogin,
         logout: handleLogout,
         sendTransaction,
-        getAccounts,
-        getBalance,
-        getChainId,
       }}
     >
       {props.children}
     </Ctx.Provider>
   );
+}
+
+export function useWallet() {
+  return React.useContext(Ctx);
 }
