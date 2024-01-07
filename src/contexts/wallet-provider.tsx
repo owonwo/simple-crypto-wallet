@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import useEffectEvent from "react-use-event-hook";
 import { Web3Auth } from "@web3auth/modal";
 import { CHAIN_NAMESPACES, IProvider } from "@web3auth/base";
-import RPC from "../web3RPC.ts";
+import RPC from "../libs/web3RPC.ts";
 import { toast } from "sonner";
 import debounce from "lodash/debounce";
 
@@ -153,7 +153,7 @@ export function WalletProvider(props: { children?: React.ReactNode }) {
       throw Error("provider not initialized yet");
     }
 
-    return await rpc.sendTransaction(...params);
+    return rpc.sendTransaction(...params);
   };
 
   const setupAccount = React.useMemo(

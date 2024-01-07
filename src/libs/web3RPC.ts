@@ -51,13 +51,30 @@ export default class RPC {
     const amountInWei = ethers.utils.parseEther(amount); // Convert from ether to wei
 
     // Submit transaction to the blockchain and wait for it to be mined
-    return await web3.eth.sendTransaction({
+    return web3.eth.sendTransaction({
       from: fromAddress,
       to: destination,
       value: amountInWei.toString(),
       // maxPriorityFeePerGas: "5000000000", // Max priority fee per gas
       // maxFeePerGas: "6000000000000", // Max fee per gas
     });
+  }
+
+  async getEstimatedGasFee(data: { destination: string; amount: string }) {
+    const web3 = new Web3(this.provider);
+    const fromAddress = (await web3.eth.getAccounts())[0];
+    const amountInWei = ethers.utils.parseEther(data.amount); // Convert from ether to wei
+
+    const gasEstimate = await web3.eth.estimateGas({
+      from: fromAddress,
+      to: data.destination,
+      value: amountInWei.toString(),
+    });
+
+    const gasPrice = await web3.eth.getGasPrice();
+    const gasFee = gasPrice * gasEstimate;
+
+    return web3.utils.fromWei(gasFee.toString(), "ether");
   }
 
   async getPrivateKey() {

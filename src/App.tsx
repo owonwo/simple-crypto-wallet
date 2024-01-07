@@ -25,8 +25,10 @@ function App() {
         </header>
 
         <main>
-          <SendToken />
-          <TransactionHistory />
+          <div className={"max-w-md container mx-auto"}>
+            <SendToken />
+            <TransactionHistory />
+          </div>
         </main>
       </div>
       <Toaster />
@@ -48,7 +50,7 @@ function AuthSection() {
           <Button className={"flex space-x-2"} onClick={login}>
             <LogInIcon />
             <span>Login</span>
-          </Button>{" "}
+          </Button>
         </>
       ) : (
         <UserInfo />

@@ -17,7 +17,8 @@ import { cn } from "@/lib/utils.ts";
 import { useSendTransaction } from "../hooks/use-transaction.tsx";
 import { toastErrorMessage } from "../libs/errors.ts";
 import { Loader2 } from "lucide-react";
-import { safeNum } from "../libs/utils.ts";
+import { standardAmount } from "../libs/utils.ts";
+import React from "react";
 
 const SendTokenForm = z.object({
   address: z.string().refine((val) => ethers.utils.isAddress(val), {
@@ -44,7 +45,8 @@ const SendTokenForm = z.object({
 
 export function SendToken() {
   const { isConnected, login } = useWallet();
-  const { isLoading, sendTransaction } = useSendTransaction();
+  const { loading, sendTransaction, gasFee, getEstimatedGasFee } =
+    useSendTransaction();
 
   const form = useForm({
     defaultValues: { amount: 0, address: "" },
@@ -65,13 +67,23 @@ export function SendToken() {
       .catch(toastErrorMessage);
   });
 
+  React.useEffect(() => {
+    getEstimatedGasFee({
+      amount: String(form.watch("amount")),
+      destination: form.watch("address"),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form.watch("amount"), form.watch("address")]);
+
   return (
     <div
-      className={"container items-center mx-auto flex flex-col -space-y-4 py-5"}
+      className={
+        "items-center justify-stretch mx-auto flex flex-col -space-y-4 py-5"
+      }
     >
       <div
         className={
-          "border bg-[#181f2a] border-white/[0.06] shadow p-8 w-1/3 rounded-t-3xl"
+          "border bg-[#181f2a] border-white/[0.06] shadow p-8 rounded-t-3xl"
         }
       >
         <p className={"text-sm uppercase mb-3 opacity-75 tracking-widest"}>
@@ -84,7 +96,7 @@ export function SendToken() {
         <form
           onSubmit={onSubmit}
           className={
-            "bg-white/[0.02] filter backdrop-blur-sm border border-white/[0.2] bg-gradient-to-b to-white/[0.04] via-white/[0.02] from-gray-800 rounded-3xl shadow-2xl space-y-6 p-5 w-1/3"
+            "w-full bg-white/[0.02] filter backdrop-blur-sm border border-white/[0.2] bg-gradient-to-b to-white/[0.04] via-white/[0.02] from-gray-800 rounded-3xl shadow-2xl space-y-6 p-5"
           }
         >
           <h4 className={"text-3xl font-semibold tracking-tight"}>Send ETH</h4>
@@ -136,6 +148,17 @@ export function SendToken() {
             />
           </div>
 
+          {form.formState.isValid ? (
+            <p className={"flex justify-between"}>
+              <span className={"text-gray-300"}>Gas Fee</span>
+              {loading.estimatingFee ? (
+                <Loader2 className="mr-2 text-orange-300 h-4 w-4 animate-spin" />
+              ) : gasFee ? (
+                <span>~ {standardAmount(gasFee)} ETH</span>
+              ) : null}
+            </p>
+          ) : null}
+
           {isConnected ? (
             <Button
               disabled={!form.formState.isValid}
@@ -143,7 +166,7 @@ export function SendToken() {
                 "font-bold w-full bg-orange-600 hover:bg-orange-500 text-white rounded-xl !py-4 h-auto"
               }
             >
-              {isLoading ? (
+              {loading.default ? (
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : null}
               Send ETH
@@ -168,9 +191,7 @@ export function SendToken() {
 
 function Balance() {
   const wallet = useWallet();
-  const [integer, decimal] = safeNum(wallet?.data?.balance, 0)
-    .toFixed(8)
-    .split(".");
+  const [integer, decimal] = standardAmount(wallet?.data?.balance).split(".");
 
   return (
     <h4 className={"text-5xl font-semibold font-numeric"}>
